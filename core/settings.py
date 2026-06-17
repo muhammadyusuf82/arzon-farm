@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'authorization',
+    'drf_yasg',
 
     'django.contrib.admin',
     'django.contrib.auth',
