@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authorization',
     'drf_yasg',
+    'pharmacies',
 
     'django.contrib.admin',
     'django.contrib.auth',
