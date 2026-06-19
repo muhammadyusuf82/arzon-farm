@@ -33,7 +33,7 @@ class PharmacyStock(models.Model):
     class Meta:
         unique_together=('pharmacy', 'drug')
         
-class Order(models.Model):
+class Cart(models.Model):
     DELIVERY_CHOICES = (
         ('self_delivery', 'Bron qilish (samovivoz)'),
         ('delivery', 'Yetkazib berish (dostavka)')
@@ -48,15 +48,15 @@ class Order(models.Model):
         ('rejected', 'Rad etildi'),
     )
     
-    client=models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-    pharmacy=models.ForeignKey('Pharmacy', on_delete=models.CASCADE, related_name='orders')
+    client=models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
+    pharmacy=models.ForeignKey('Pharmacy', on_delete=models.CASCADE, related_name='carts')
     delivery_type=models.CharField(max_length=20, choices=DELIVERY_CHOICES)
     status=models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending_receipt')
     prescription_image=models.ImageField(upload_to='receipts/', null=True, blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
     
-class OrderItem(models.Model):
-    order=models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+class CartItem(models.Model):
+    order=models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     stock_item=models.ForeignKey(PharmacyStock, on_delete=models.PROTECT)
     quantity=models.PositiveIntegerField(default=1)
     price_at_purchase=models.DecimalField(max_digits=10, decimal_places=3)
