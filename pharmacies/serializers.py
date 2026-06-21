@@ -1,10 +1,18 @@
 from rest_framework import serializers
 from .models import *
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'slug', 'name']
 class DrugSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True, read_only=True)
+    tags_ids = serializers.PrimaryKeyRelatedField(
+        many=True, write_only=True, queryset=Tag.objects.all(), source='tags', required=False
+    )
     class Meta:
         model = Drug
-        fields = '__all__'
+        fields = ['id', 'name', 'inn', 'barcode', 'manufacturer', 'is_prescription_required', 'tags', 'tags_ids']
 class PharmacySerializer(serializers.ModelSerializer):
     class Meta:
         model = Pharmacy
