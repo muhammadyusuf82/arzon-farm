@@ -1,7 +1,9 @@
-from authorization.serializers import SignUpSerializer, UpdateUserDataSerializer
+from authorization.serializers import SignUpSerializer, UpdateUserDataSerializer, UserSerializer
 from authorization.send_sms import send_sms
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser
+from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from core.settings import r, CODE_LENGTH, EXPIRES_IN, RESEND_IN
@@ -188,6 +190,14 @@ def view_profile(request):
         "role": request.user.role,
         "metadata": request.user.metadata,
         "email": request.user.email,
+        "is_staff": request.user.is_staff,
+        "is_superuser": request.user.is_superuser
     })
 
- 
+
+
+class UsersViewSet(ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    

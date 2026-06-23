@@ -21,6 +21,8 @@ class PharmacyViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user=self.request.user
+        if user.is_staff:
+            return Pharmacy.objects.all()
         if self.action in ['list', 'retrieve']: 
             return Pharmacy.objects.all()
         if user.is_authenticated:
@@ -38,6 +40,8 @@ class PharmacyStockView(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user=self.request.user
+        if user.is_staff:
+            return PharmacyStock.objects.all()
         if self.action in ['list', 'retrieve']:
             return PharmacyStock.objects.all()
         if user.is_authenticated:

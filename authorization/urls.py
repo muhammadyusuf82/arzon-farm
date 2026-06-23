@@ -1,5 +1,9 @@
-from django.urls import path
+from django.urls import path, include
 from authorization.views import *
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register('users', UsersViewSet, basename='users')
 
 urlpatterns = [
     path('begin-validation/<str:phone_number>', begin_validation),
@@ -9,4 +13,5 @@ urlpatterns = [
     path('update-profile/', update_profile),
     path('update-password-request/', update_password_request),
     path('update-password/<str:code>/<str:new_password>', update_password),
+    path('', include(router.urls))
 ]
