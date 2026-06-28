@@ -46,28 +46,7 @@ class Cart(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"cart d"
-    
-    
-class Order(models.Model):
-    DELIVERY_CHOICES = (
-        ('self_delivery', 'Bron qilish (samovivoz)'),
-        ('delivery', 'Yetkazib berish (dostavka)')
-    )
-    STATUS_CHOICES = (
-        ('pending_receipt', 'Retsept kutilmoqda'),
-        ('reviewing', 'Retsept tekshirilmoqda'),
-        ('approved_assembling', 'Tasdiqlandi, joylanmoqda'), 
-        ('ready', 'Olib ketish uchun tayyor'), 
-        ('on_the_way', 'Yetkazib beruvchi yolda'),
-        ('delivered', 'Yetkazildi'),
-        ('rejected', 'Rad etildi'),
-    )
-    
-    delivery_type=models.CharField(max_length=20, choices=DELIVERY_CHOICES)
-    status=models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending_receipt')
-    prescription_image=models.ImageField(upload_to='receipts/', null=True, blank=True)
-    created_at=models.DateTimeField(auto_now_add=True)
+        return f"cart #{self.pk} {self.client}"
     
 class CartItem(models.Model):
     order=models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
@@ -75,21 +54,3 @@ class CartItem(models.Model):
     quantity=models.PositiveIntegerField(default=1)
     price_at_purchase=models.DecimalField(max_digits=10, decimal_places=3)
     
-class Courier(models.Model):
-    user=models.OneToOneField(User, on_delete=models.CASCADE, related_name="courier_profile")
-    is_active=models.BooleanField(default=True)
-    vehicle=models.CharField(max_length=150, blank=True)
-    created_at=models.DateTimeField(auto_now_add=True)
-    
-class CourierRequest(models.Model):
-    STATUS_CHOICES=(
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected')
-    )
-    
-    applicant=models.OneToOneField(User, on_delete=models.CASCADE, related_name='courier_request')
-    status=models.CharField(choices=STATUS_CHOICES, max_length=20, default='pending')
-    vehicle=models.CharField(max_length=150, blank=True)
-    note=models.CharField(blank=True, help_text='applicants notes')
-    created_at=models.DateTimeField(auto_now_add=True)

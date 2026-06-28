@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'authorization',
     'drf_yasg',
     'pharmacies',
+    'delivery',
 
     'django.contrib.admin',
     'django.contrib.auth',
