@@ -26,62 +26,6 @@ User roles: `user` | `pharmacy` | `courier`
 
 ## Authorization (`/api/auth/`)
 
-No SMS verification. Sign up with `POST /api/auth/register/` if the phone number is free; log in with tokens.
-
-### `POST /api/auth/register/`
-
-Create a user when that phone number does not exist yet. Returns JWT tokens.
-
-**Auth:** public.
-
-**Send (JSON body):**
-
-```json
-{
-  "phone_number": "901234567",
-  "password": "secret12",
-  "email": "optional@example.com",
-  "role": "user",
-  "metadata": { "name": "Ali" }
-}
-```
-
-| Field | Required | Notes |
-|-------|----------|-------|
-| `phone_number` | yes | unique, max 9 chars |
-| `password` | yes | write-only, min 6 chars |
-| `email` | no | |
-| `role` | no | `user` (default), `pharmacy`, or `courier` |
-| `metadata` | no | JSON object |
-
-**Responds `201`:**
-
-```json
-{
-  "detail": "user created successfully",
-  "code": "signup_success",
-  "refresh": "<refresh_token>",
-  "access": "<access_token>",
-  "user": {
-    "id": 7,
-    "phone_number": "901234567",
-    "email": "optional@example.com",
-    "role": "user",
-    "metadata": { "name": "Ali" }
-  }
-}
-```
-
-**Errors `400`:** phone already taken or validation errors, e.g.
-
-```json
-{
-  "phone_number": ["user with this phone number already exists."]
-}
-```
-
----
-
 ### `POST /api/auth/token/`
 
 Login. Obtain JWT access + refresh tokens.
@@ -132,17 +76,121 @@ Renew access token.
 
 ---
 
-### `GET /api/auth/view-profile/`
+### `GET|POST /api/auth/begin-validation/<phone_number>`
 
-View the authenticated user's profile.
+Start signup: send SMS verification code to the phone number.
 
-**Auth:** JWT required.
+**Path params:**
+
+| Param | Example |
+|-------|---------|
+| `phone_number` | `901234567` |
+
+**Body:** none required.
 
 **Responds `200`:**
 
 ```json
 {
-  "id": 7,
+  "detail": "code sent successfully",
+  "code": "code_sent_successfully"
+}
+```
+
+**Errors:**
+
+| Status | `code` | When |
+|--------|--------|------|
+| `400` | `phone_number_exists` | User already registered |
+| `425` | `wait_to_resend` | Code already sent; wait for `resend_time` |
+
+Example `425` body:
+
+```json
+{
+  "detail": "a code was already sent",
+  "resend_time": "2026-09-18 10:00:00.000000+00:00",
+  "code": "wait_to_resend"
+}
+```
+
+---
+
+### `GET|POST /api/auth/validate-phone-number/<phone_number>/<code>`
+
+Confirm SMS code and receive a one-time `user_create_key`.
+
+**Path params:** `phone_number`, `code` (4-digit SMS code).
+
+**Responds `200`:**
+
+```json
+{
+  "detail": "Congratulations! Here is your user_create_key. If there was a previous one, it is already overwritten.",
+  "user_create_key": "<uuid>",
+  "code": "user_create_key_received"
+}
+```
+
+**Errors:**
+
+| Status | `code` |
+|--------|--------|
+| `400` | `no_validation_requested` |
+| `400` | `incorrect_code` |
+| `400` | `expired` |
+
+---
+
+### `POST /api/auth/create-user-via-key/<phone_number>/<user_create_key>`
+
+Create account after phone validation. Returns JWT tokens.
+
+**Path params:** `phone_number`, `user_create_key`.
+
+**Send (JSON body):**
+
+```json
+{
+  "password": "secret123",
+  "email": "optional@example.com",
+  "metadata": {}
+}
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `password` | yes | write-only |
+| `email` | no | |
+| `metadata` | no | JSON object |
+
+`phone_number` comes from the URL (not the body).
+
+**Responds `201`:**
+
+```json
+{
+  "detail": "I am soo proud of you!! These tokens are for all your effort!",
+  "refresh": "<refresh_token>",
+  "access": "<access_token>",
+  "code": "signup_success"
+}
+```
+
+**Errors:** `400` with `code: wrong_user_create_key`, or serializer validation errors.
+
+---
+
+### `GET /api/auth/view-profile/`
+
+View the authenticated user's profile.
+
+**Auth:** required.
+
+**Responds `200`:**
+
+```json
+{
   "phone_number": "901234567",
   "role": "user",
   "metadata": null,
@@ -152,7 +200,7 @@ View the authenticated user's profile.
 }
 ```
 
-**Errors:** `401` if not authenticated.
+**Errors:** `401` with `code: not_authenticated`.
 
 ---
 
@@ -160,7 +208,7 @@ View the authenticated user's profile.
 
 Update profile fields.
 
-**Auth:** JWT required.
+**Auth:** required.
 
 **Send:**
 
@@ -174,51 +222,71 @@ Update profile fields.
 | Method | Behavior |
 |--------|----------|
 | `PATCH` | partial update (only sent fields) |
-| `PUT` | full update of serializer fields |
+| `PUT` | treated as partial in current code (`partial=True` when method is PUT) |
 
-**Responds `200`:**
-
-```json
-{
-  "email": "new@example.com",
-  "metadata": { "name": "Ali" }
-}
-```
+**Responds `200`:** updated user data (`email`, `metadata`).
 
 **Errors:** `401` not authenticated; `400` validation errors.
 
 ---
 
-### `POST /api/auth/change-password/`
+### `GET|POST /api/auth/update-password-request/`
 
-Change password for the authenticated user (no SMS).
+Request an SMS code to change password.
 
-**Auth:** JWT required.
+**Auth:** required.
 
-**Send:**
-
-```json
-{
-  "old_password": "secret12",
-  "new_password": "newpass99"
-}
-```
-
-| Field | Required | Notes |
-|-------|----------|-------|
-| `old_password` | yes | must match current password |
-| `new_password` | yes | min 6 chars |
+**Body:** none.
 
 **Responds `200`:**
 
 ```json
 {
-  "detail": "password updated successfully",
+  "detail": "Check your SMS, the code should be there.",
+  "code": "sent"
+}
+```
+
+If a code was already sent recently:
+
+```json
+{
+  "resend_time": "<datetime>",
+  "code": "resend"
+}
+```
+
+**Errors:** `403` with `code: not_authenticated`.
+
+---
+
+### `GET|POST /api/auth/update-password/<code>/<new_password>`
+
+Set a new password using the SMS code.
+
+**Auth:** required.
+
+**Path params:** `code`, `new_password`.
+
+**Responds `200`:**
+
+```json
+{
+  "detail": "your new password has been set",
   "code": "success"
 }
 ```
 
-**Errors:** `401` not authenticated; `400` if `old_password` is wrong or `new_password` is too short.
+**Errors:**
+
+| Status | `code` |
+|--------|--------|
+| `401` | `not_authenticated` |
+| `400` | `no_code_found` |
+| `200`* | `incorrect_code` |
+| `400` | `expired` |
+
+\*Incorrect code currently returns HTTP `200` with `code: incorrect_code`.
 
 ---
 
@@ -237,7 +305,7 @@ Admin-only (`IsAdminUser` / staff). Full ModelViewSet.
 
 **Auth:** staff/admin JWT required.
 
-**Body (create/update):** all `User` model fields (`fields = '__all__'`). `password` is write-only and hashed on create/update.
+**Body (create/update):** all `User` model fields (`fields = '__all__'`). `password` is write-only and hashed on update.
 
 **Response:** user object (password never returned).
 
@@ -516,12 +584,15 @@ Order `status` values: `pending_receipt`, `reviewing`, `approved_assembling`, `r
 
 | Method | Endpoint | Auth |
 |--------|----------|------|
-| `POST` | `/api/auth/register/` | public |
 | `POST` | `/api/auth/token/` | public |
 | `POST` | `/api/auth/token/refresh/` | public |
+| `GET\|POST` | `/api/auth/begin-validation/<phone>/` | public |
+| `GET\|POST` | `/api/auth/validate-phone-number/<phone>/<code>/` | public |
+| `POST` | `/api/auth/create-user-via-key/<phone>/<key>/` | public |
 | `GET` | `/api/auth/view-profile/` | JWT |
 | `PUT\|PATCH` | `/api/auth/update-profile/` | JWT |
-| `POST` | `/api/auth/change-password/` | JWT |
+| `GET\|POST` | `/api/auth/update-password-request/` | JWT |
+| `GET\|POST` | `/api/auth/update-password/<code>/<new_password>/` | JWT |
 | `CRUD` | `/api/auth/users/` | staff |
 | `CRUD` | `/api/tags/` | read public / write staff |
 | `CRUD` | `/api/drugs/` | read public / write staff |
