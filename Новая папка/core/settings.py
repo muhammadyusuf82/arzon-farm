@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-g)k@v@vru&u&-v_#ai+6bnjw=&w)4z2&^)@_6eqm*7zd@(ix3$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'pharmacies',
     'delivery',
+    "corsheaders",
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -46,7 +47,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
